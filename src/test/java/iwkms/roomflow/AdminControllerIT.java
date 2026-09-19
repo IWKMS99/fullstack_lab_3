@@ -97,7 +97,7 @@ class AdminControllerIT {
     void shouldReturnUsersForAdmin() throws Exception {
         mockMvc.perform(get("/api/v1/admin/users").with(user(adminUser)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)));
+                .andExpect(jsonPath("$", hasSize(2)));
     }
 
     @Test

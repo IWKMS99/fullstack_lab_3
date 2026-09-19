@@ -53,6 +53,8 @@ public class SecurityConfig {
             throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(
+                        (request, response, exception) -> response.sendError(401, "Authentication required")))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",

@@ -103,6 +103,8 @@ export const setupInterceptors = ({getAccessToken, setAccessToken, onUnauthorize
                 return Promise.reject(error);
             }
 
+            originalRequest._retry = true;
+
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({
@@ -115,7 +117,6 @@ export const setupInterceptors = ({getAccessToken, setAccessToken, onUnauthorize
                 });
             }
 
-            originalRequest._retry = true;
             isRefreshing = true;
 
             try {

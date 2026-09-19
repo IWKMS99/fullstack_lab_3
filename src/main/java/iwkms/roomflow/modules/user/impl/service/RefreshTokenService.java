@@ -35,6 +35,7 @@ public class RefreshTokenService {
         return createRefreshToken(user, UUID.randomUUID(), null);
     }
 
+    @Transactional(noRollbackFor = {InvalidRefreshTokenException.class, RefreshTokenExpiredException.class})
     public RefreshRotationResult rotate(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new InvalidRefreshTokenException("Refresh token is missing");
@@ -50,7 +51,7 @@ public class RefreshTokenService {
             throw new InvalidRefreshTokenException("Refresh token reuse detected");
         }
 
-        if (token.getExpiresAt().isBefore(now)) {
+        if (!token.getExpiresAt().isAfter(now)) {
             token.setRevokedAt(now);
             refreshTokenRepository.save(token);
             throw new RefreshTokenExpiredException("Refresh token expired");

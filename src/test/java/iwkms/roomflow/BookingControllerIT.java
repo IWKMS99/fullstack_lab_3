@@ -231,7 +231,7 @@ class BookingControllerIT {
     @Test
     @DisplayName("GET /my-bookings: должен вернуть 401 без авторизации")
     void shouldReturnUnauthorizedForProtectedEndpointWithoutToken() throws Exception {
-        mockMvc.perform(get("/api/v1/my-bookings")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/my-bookings")).andExpect(status().isUnauthorized());
     }
 
     @Test

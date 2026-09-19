@@ -222,6 +222,6 @@ public class AuthControllerIT {
     @Test
     @DisplayName("GET /auth/me: должен вернуть 401 без access token")
     void shouldReturnUnauthorizedForMeWithoutToken() throws Exception {
-        mockMvc.perform(get("/api/v1/auth/me")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());
     }
 }

@@ -1,6 +1,8 @@
 package iwkms.roomflow.modules.user.impl.service;
 
 import iwkms.roomflow.config.security.JwtService;
+import iwkms.roomflow.exception.InvalidRefreshTokenException;
+import iwkms.roomflow.exception.RefreshTokenExpiredException;
 import iwkms.roomflow.exception.UserAlreadyExistsException;
 import iwkms.roomflow.modules.user.api.dto.CurrentUserResponseDto;
 import iwkms.roomflow.modules.user.api.dto.LoginRequestDto;
@@ -57,6 +59,7 @@ public class AuthService {
         return new AuthTokens(accessToken, refreshToken);
     }
 
+    @Transactional(noRollbackFor = {InvalidRefreshTokenException.class, RefreshTokenExpiredException.class})
     public AuthTokens refresh(String refreshToken) {
         RefreshRotationResult rotationResult = refreshTokenService.rotate(refreshToken);
         Set<String> roles =
