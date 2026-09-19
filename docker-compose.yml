@@ -1,15 +1,13 @@
-version: '3.8'
 
 services:
   db:
     image: postgres:16-alpine
-    container_name: roomflow-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5435:5432"
+      - "${DB_PORT:-5435}:5432"
     volumes:
       - roomflow-pg-data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -20,15 +18,14 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
-    container_name: roomflow-minio
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${S3_HTTP_PORT:-9000}:9000"
+      - "${S3_CONSOLE_PORT:-9001}:9001"
     volumes:
       - roomflow-minio-data:/data
     restart: unless-stopped
@@ -39,25 +36,23 @@ services:
       retries: 5
 
   mc:
-    image: minio/mc:latest
-    container_name: roomflow-minio-mc
+    image: quay.io/minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
-      mc mb -p local/${S3_BUCKET} || true &&
-      mc anonymous set none local/${S3_BUCKET} || true
+      mc mb --ignore-existing local/${S3_BUCKET} &&
+      mc anonymous set none local/${S3_BUCKET}
       "
 
   app:
-    container_name: roomflow-app
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8081:${SERVER_PORT}"
+      - "${API_HTTP_PORT:-8081}:${SERVER_PORT}"
     env_file:
       - ./.env
     environment:
@@ -65,8 +60,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      mc:
+        condition: service_completed_successfully
     restart: on-failure
 
 volumes:

@@ -1,9 +1,7 @@
-version: '3.8'
 
 services:
   db:
     image: postgres:16-alpine
-    container_name: roomflow-postgres-prod
     env_file: ./.env
     volumes:
       - roomflow-pg-data-prod:/var/lib/postgresql/data
@@ -15,10 +13,11 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
-    container_name: roomflow-minio-prod
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     env_file: ./.env
     command: server /data --console-address ":9001"
+    ports:
+      - "${S3_HTTP_PORT:-9000}:9000"
     volumes:
       - roomflow-minio-data-prod:/data
     restart: unless-stopped
@@ -29,8 +28,7 @@ services:
       retries: 5
 
   mc:
-    image: minio/mc:latest
-    container_name: roomflow-minio-mc-prod
+    image: quay.io/minio/mc:latest
     env_file: ./.env
     depends_on:
       minio:
@@ -38,13 +36,11 @@ services:
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
-      mc mb -p local/${S3_BUCKET} || true &&
-      mc anonymous set none local/${S3_BUCKET} || true
+      mc mb --ignore-existing local/${S3_BUCKET} &&
+      mc anonymous set none local/${S3_BUCKET}
       "
 
   app:
-    image: roomflow-app:latest
-    container_name: roomflow-app-prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -55,16 +51,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      mc:
+        condition: service_completed_successfully
 
   nginx:
-    container_name: roomflow-nginx-prod
     build:
       context: .
       dockerfile: Dockerfile_nginx
     ports:
-      - "8080:80"
+      - "${APP_HTTP_PORT:-8080}:80"
     restart: unless-stopped
     depends_on:
       - app

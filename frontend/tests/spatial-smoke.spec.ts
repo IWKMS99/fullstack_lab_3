@@ -58,12 +58,15 @@ test.beforeEach(async ({page}) => {
   await page.route('**/api/v1/admin/bookings**', async (route) => {
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify([])});
   });
+  await page.route('**/api/v1/admin/rooms**', async (route) => {
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, sort: 'name,asc'})});
+  });
 });
 
 test('schedule page renders visible room field content', async ({page}) => {
   await page.goto('/schedule');
   await expect(page.getByRole('heading', {name: 'Бронирование'})).toBeVisible();
-  await expect(page.getByRole('button', {name: /\d{4}/})).toBeVisible();
+  await expect(page.getByRole('button', {name: 'Выбрать дату в календаре'})).toBeVisible();
   await expect(page.locator('[data-room-id="room-a"]').first()).toBeVisible();
 });
 
@@ -199,7 +202,8 @@ test('admin deep-link renders overlay for admin user', async ({page}) => {
 
   await page.goto('/admin');
   await expect(page).toHaveURL('/admin');
-  await expect(page.getByText('God Mode')).toBeVisible();
+  await expect(page.getByText('Админ-панель')).toBeVisible();
+  await page.getByRole('button', {name: 'Бронирования'}).click();
   await expect(page.getByText('member@roomflow.local').first()).toBeVisible();
   await page.getByRole('button', {name: 'Отменить'}).first().click();
 });

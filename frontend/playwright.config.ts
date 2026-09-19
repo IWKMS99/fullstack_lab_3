@@ -7,6 +7,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
+    channel: process.env.PW_CHANNEL || undefined,
     reducedMotion: 'reduce',
   },
   webServer: {

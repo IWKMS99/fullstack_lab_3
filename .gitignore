@@ -38,3 +38,7 @@ out/
 *.py
 *.txt
 *.env
+!scripts/*.py
+
+frontend/test-results/
+frontend/playwright-report/
