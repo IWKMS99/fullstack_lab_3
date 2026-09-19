@@ -72,7 +72,8 @@ class AdminRoomFileControllerIT {
     @Test
     @DisplayName("POST /admin/rooms/{id}/files: uploads valid PNG")
     void shouldUploadRoomFile() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "room.png", "image/png", "dummy-content".getBytes());
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "room.png", "image/png", "dummy-content".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/api/v1/admin/rooms/{id}/files", ROOM_A_ID)
                         .file(file)
@@ -84,8 +85,11 @@ class AdminRoomFileControllerIT {
     @Test
     @DisplayName("GET /admin/rooms/{id}/files and DELETE /admin/rooms/files/{fileId}: list and delete file")
     void shouldListAndDeleteRoomFile() throws Exception {
-        MockMultipartFile file =
-                new MockMultipartFile("file", "room.pdf", "application/pdf", "dummy-content".getBytes());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "room.pdf",
+                "application/pdf",
+                "dummy-content".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         String response = mockMvc.perform(multipart("/api/v1/admin/rooms/{id}/files", ROOM_A_ID)
                         .file(file)

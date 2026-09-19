@@ -40,7 +40,7 @@ const RoomFormModal = ({
   const roomSchema = React.useMemo(
     () =>
       z.object({
-        name: z.string().min(1, t('admin.roomForm.validation.nameRequired')),
+        name: z.string().trim().min(1, t('admin.roomForm.validation.nameRequired')).max(255),
         floor: z.number().int().min(1, t('admin.roomForm.validation.floorMin')),
         capacity: z.number().int().min(1, t('admin.roomForm.validation.capacityMin')),
       }),

@@ -4,6 +4,7 @@ import iwkms.roomflow.config.storage.S3Properties;
 import iwkms.roomflow.exception.InvalidFileException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +34,12 @@ public class FileStorageService {
         validateFile(file);
 
         String contentType = normalizeContentType(file.getContentType());
-        String extension = switch (contentType) {
-            case "application/pdf" -> "pdf";
-            case "image/png" -> "png";
-            default -> "jpg";
-        };
+        String extension =
+                switch (contentType) {
+                    case "application/pdf" -> "pdf";
+                    case "image/png" -> "png";
+                    default -> "jpg";
+                };
         String key = "rooms/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -47,7 +49,34 @@ public class FileStorageService {
                 .build();
 
         try {
-            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+            byte[] bytes = file.getBytes();
+            boolean matches =
+                    switch (contentType) {
+                        case "image/png" -> bytes.length >= 8
+                                && bytes[0] == (byte) 0x89
+                                && bytes[1] == 'P'
+                                && bytes[2] == 'N'
+                                && bytes[3] == 'G'
+                                && bytes[4] == 13
+                                && bytes[5] == 10
+                                && bytes[6] == 26
+                                && bytes[7] == 10;
+                        case "image/jpeg" -> bytes.length >= 3
+                                && bytes[0] == (byte) 0xff
+                                && bytes[1] == (byte) 0xd8
+                                && bytes[2] == (byte) 0xff;
+                        case "application/pdf" -> bytes.length >= 5
+                                && bytes[0] == '%'
+                                && bytes[1] == 'P'
+                                && bytes[2] == 'D'
+                                && bytes[3] == 'F'
+                                && bytes[4] == '-';
+                        default -> false;
+                    };
+            if (!matches) {
+                throw new InvalidFileException("File content does not match its declared type");
+            }
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
         } catch (IOException ex) {
             throw new InvalidFileException("Failed to read uploaded file", ex);
         }
@@ -94,6 +123,6 @@ public class FileStorageService {
     }
 
     private String normalizeContentType(String contentType) {
-        return contentType == null ? "" : contentType.trim().toLowerCase();
+        return contentType == null ? "" : contentType.trim().toLowerCase(Locale.ROOT);
     }
 }

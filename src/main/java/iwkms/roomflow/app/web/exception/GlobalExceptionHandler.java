@@ -23,6 +23,29 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler({
+        org.springframework.web.method.annotation.HandlerMethodValidationException.class,
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+        org.springframework.http.converter.HttpMessageNotReadableException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponseDto handleInvalidInput(Exception ex) {
+        return new ErrorResponseDto(HttpStatus.BAD_REQUEST.value(), "Invalid request parameters");
+    }
+
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<ErrorResponseDto> handleStatus(
+            org.springframework.web.server.ResponseStatusException ex) {
+        return org.springframework.http.ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorResponseDto(ex.getStatusCode().value(), ex.getReason()));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    public ErrorResponseDto handleLargeUpload(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return new ErrorResponseDto(HttpStatus.PAYLOAD_TOO_LARGE.value(), "File size exceeds 5MB");
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ValidationErrorResponseDto handleValidationExceptions(MethodArgumentNotValidException ex) {

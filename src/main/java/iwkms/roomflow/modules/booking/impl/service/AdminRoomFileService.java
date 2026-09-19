@@ -6,6 +6,7 @@ import iwkms.roomflow.modules.booking.impl.domain.Room;
 import iwkms.roomflow.modules.booking.impl.domain.RoomFile;
 import iwkms.roomflow.modules.booking.impl.repository.RoomFileRepository;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,18 +25,31 @@ public class AdminRoomFileService {
     public RoomFileDto upload(UUID roomId, MultipartFile file) {
         Room room = adminRoomService.requireActiveRoom(roomId);
         String fileKey = fileStorageService.uploadFile(file);
+        String contentType = file.getContentType();
 
         RoomFile roomFile = RoomFile.builder()
                 .id(UUID.randomUUID())
                 .room(room)
                 .fileKey(fileKey)
                 .originalName(file.getOriginalFilename() == null ? "file" : file.getOriginalFilename())
-                .contentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType())
+                .contentType(
+                        contentType == null
+                                ? "application/octet-stream"
+                                : contentType.trim().toLowerCase(Locale.ROOT))
                 .size(file.getSize())
                 .build();
 
-        RoomFile saved = roomFileRepository.save(roomFile);
-        return toDto(saved);
+        try {
+            RoomFile saved = roomFileRepository.saveAndFlush(roomFile);
+            return toDto(saved);
+        } catch (RuntimeException ex) {
+            try {
+                fileStorageService.deleteFile(fileKey);
+            } catch (RuntimeException cleanupFailure) {
+                ex.addSuppressed(cleanupFailure);
+            }
+            throw ex;
+        }
     }
 
     @Transactional(readOnly = true)

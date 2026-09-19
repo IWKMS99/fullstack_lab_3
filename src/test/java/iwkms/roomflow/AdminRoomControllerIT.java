@@ -71,6 +71,17 @@ class AdminRoomControllerIT {
     }
 
     @Test
+    void shouldRejectInvalidFilterAndPaginationParameters() throws Exception {
+        for (var parameter : Map.of("page", "-1", "size", "101", "floor", "0", "minCapacity", "-1", "sort", "id,asc")
+                .entrySet()) {
+            mockMvc.perform(get("/api/v1/admin/rooms")
+                            .with(user(adminUser))
+                            .param(parameter.getKey(), parameter.getValue()))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
     @DisplayName("GET /admin/rooms: admin receives paginated active rooms")
     void shouldReturnRoomsForAdmin() throws Exception {
         mockMvc.perform(get("/api/v1/admin/rooms")
